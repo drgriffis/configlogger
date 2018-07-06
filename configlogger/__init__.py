@@ -6,7 +6,7 @@ import codecs
 from datetime import datetime
 from collections import OrderedDict
 
-def writeConfig(file_path, settings, title=None):
+def writeConfig(output, settings, title=None, start_time=None, end_time=None):
     '''Write an experimental configuration to a file.
 
     Always writes the current date and time at the head of the file.
@@ -40,22 +40,56 @@ def writeConfig(file_path, settings, title=None):
         ## Section 1 ##
         sub-value A: 12.4
         sub-value B: string
+
+
+    Arguments:
+
+        output     :: str or stream; if str, uses as filepath to write to; if open stream,
+                      writes to it but leaves stream open
+        settings   :: (described above)
+        title      :: optional string to write at start of config file
+        start_time :: a datetime.datetime object indicating when the program started
+                      execution; if not provided, defaults to datetime.now()
+        end_time   :: a datetime.datetime object indicating when the program ended
+                      execution; if provided, also writes elapsed execution time
+                      between start_time and end_time
     '''
 
     group_set = set([dict, OrderedDict])
 
-    with codecs.open(file_path, 'w', 'utf-8') as stream:
-        # headers
-        if title:
-            stream.write('%s\n' % title)
-        stream.write('Run time: %s\n' % datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
-        stream.write('\n')
+    # if passed in a filepath, open it here and close it when done
+    if type(output) is str:
+        output = codecs.open(output, 'w', 'utf-8')
+        close_at_end = True
+    else:
+        close_at_end = False
 
-        for (key, value) in settings:
-            if type(value) in group_set:
-                stream.write('\n## %s ##\n' % key)
-                for (sub_key, sub_value) in value.items():
-                    stream.write('%s: %s\n' % (sub_key, str(sub_value)))
-                stream.write('\n')
-            else:
-                stream.write('%s: %s\n' % (key, str(value)))
+    # headers
+    if title:
+        output.write('%s\n' % title)
+
+    time_fmt = '%Y-%m-%d %H:%M:%S'
+
+    if start_time is None:
+        start_time = datetime.now()
+        header = 'Run'
+    else:
+        header = 'Start'
+    output.write('%s time: %s\n' % (header, start_time.strftime(time_fmt)))
+
+    if end_time:
+        output.write('End time: %s\n' % end_time.strftime(time_fmt))
+        output.write('Execution time: %f seconds\n' % (end_time - start_time).total_seconds())
+    output.write('\n')
+
+    for (key, value) in settings:
+        if type(value) in group_set:
+            output.write('\n## %s ##\n' % key)
+            for (sub_key, sub_value) in value.items():
+                output.write('%s: %s\n' % (sub_key, str(sub_value)))
+            output.write('\n')
+        else:
+            output.write('%s: %s\n' % (key, str(value)))
+
+    if close_at_end:
+        output.close()
