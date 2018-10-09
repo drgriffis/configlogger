@@ -55,7 +55,8 @@ def writeConfig(output, settings, title=None, start_time=None, end_time=None):
                       between start_time and end_time
     '''
 
-    group_set = set([dict, OrderedDict])
+    group_set = set([dict, OrderedDict, list, tuple])
+    dict_set = set([dict, OrderedDict])
 
     # if passed in a filepath, open it here and close it when done
     if type(output) is str:
@@ -85,7 +86,11 @@ def writeConfig(output, settings, title=None, start_time=None, end_time=None):
     for (key, value) in settings:
         if type(value) in group_set:
             output.write('\n## %s ##\n' % key)
-            for (sub_key, sub_value) in value.items():
+            if type(value) in dict_set:
+                iterator = value.items()
+            else:
+                iterator = iter(value)
+            for (sub_key, sub_value) in iterator:
                 output.write('%s: %s\n' % (sub_key, str(sub_value)))
             output.write('\n')
         else:
