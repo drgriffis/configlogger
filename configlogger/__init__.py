@@ -98,3 +98,5 @@ def writeConfig(output, settings, title=None, start_time=None, end_time=None):
 
     if close_at_end:
         output.close()
+    else:
+        output.write('\n')
